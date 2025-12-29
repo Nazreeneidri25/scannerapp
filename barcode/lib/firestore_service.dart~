@@ -66,11 +66,9 @@ class FirestoreService {
     try {
       // Calculate status based on expiry date
       final now = DateTime.now();
-      final daysUntilExpiry = expiryDate
-          .difference(now)
-          .inDays;
+      final daysUntilExpiry = expiryDate.difference(now).inDays;
       String status;
-
+      
       if (daysUntilExpiry < 0) {
         status = 'Expired';
       } else if (daysUntilExpiry == 0) {
@@ -140,8 +138,10 @@ class FirestoreService {
         .snapshots();
   }
 
-  Stream<QuerySnapshot> getFilteredFoodItemsStream(String userId,
-      String filter) {
+  Stream<QuerySnapshot> getFilteredFoodItemsStream(
+    String userId, 
+    String filter
+  ) {
     Query query = _firestore
         .collection('users')
         .doc(userId)
@@ -151,8 +151,7 @@ class FirestoreService {
     if (filter == 'Fresh') {
       query = query.where('status', isEqualTo: 'Fresh');
     } else if (filter == 'Expiring Soon') {
-      query =
-          query.where('status', whereIn: ['Expiring Soon', 'Expiring Today']);
+      query = query.where('status', whereIn: ['Expiring Soon', 'Expiring Today']);
     } else if (filter == 'Expired') {
       query = query.where('status', isEqualTo: 'Expired');
     }
@@ -160,8 +159,7 @@ class FirestoreService {
     return query.snapshots();
   }
 
-  Stream<QuerySnapshot> getRecentActivityStream(String userId,
-      {int limit = 5}) {
+  Stream<QuerySnapshot> getRecentActivityStream(String userId, {int limit = 5}) {
     return _firestore
         .collection('users')
         .doc(userId)
@@ -187,7 +185,7 @@ class FirestoreService {
       int expired = 0;
       double totalValue = 0;
       int lowStock = 0;
-
+      
       final today = DateTime.now();
       final startOfDay = DateTime(today.year, today.month, today.day);
       int todayAdded = 0;
@@ -195,12 +193,12 @@ class FirestoreService {
       for (final doc in snapshot.docs) {
         total++;
         final data = doc.data();
-
+        
         final status = data['status'] as String? ?? 'Fresh';
         final quantity = (data['quantity'] as num?)?.toDouble() ?? 0;
         final value = (data['value'] as num?)?.toDouble() ?? 0;
         final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-
+        
         if (status == 'Fresh') {
           fresh++;
         } else if (status == 'Expiring Soon' || status == 'Expiring Today') {
@@ -208,13 +206,13 @@ class FirestoreService {
         } else if (status == 'Expired') {
           expired++;
         }
-
+        
         totalValue += value;
-
+        
         if (quantity < 5) {
           lowStock++;
         }
-
+        
         if (createdAt != null && createdAt.isAfter(startOfDay)) {
           todayAdded++;
         }
@@ -246,7 +244,7 @@ class FirestoreService {
   Future<void> _updateUserStats(String userId) async {
     try {
       final stats = await getUserStats(userId);
-
+      
       await _firestore.collection('users').doc(userId).update({
         'stats': {
           'totalItems': stats['totalItems'],
@@ -311,8 +309,7 @@ class FirestoreService {
 
   // ============= EXPIRY ALERTS =============
 
-  Future<List<Map<String, dynamic>>> getExpiringItems(String userId,
-      int days) async {
+  Future<List<Map<String, dynamic>>> getExpiringItems(String userId, int days) async {
     try {
       final now = Timestamp.now();
       final futureDate = Timestamp.fromDate(
@@ -332,10 +329,8 @@ class FirestoreService {
         final data = doc.data();
         final expiryDate = (data['expiryDate'] as Timestamp).toDate();
         final now = DateTime.now();
-        final daysUntilExpiry = expiryDate
-            .difference(now)
-            .inDays;
-
+        final daysUntilExpiry = expiryDate.difference(now).inDays;
+        
         return {
           'id': doc.id,
           'name': data['name'] as String? ?? 'Item',
@@ -352,4 +347,3 @@ class FirestoreService {
       return [];
     }
   }
-}
